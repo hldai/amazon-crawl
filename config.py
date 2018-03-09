@@ -10,3 +10,4 @@ headers = {
 DATADIR = 'd:/data/amazon'
 ASIN_FILE = path.join(DATADIR, 'asin_list.txt')
 SCRAPE_DIR = path.join(DATADIR, 'scraped')
+METADATA_FILE = path.join(DATADIR, 'metadata.json')
