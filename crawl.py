@@ -45,7 +45,7 @@ for asin in asins:
     logging.info('requesting {}'.format(asin))
     r = make_request('https://www.amazon.com/dp/{}/'.format(asin))
     if r is None:
-        exit()
+        continue
 
     with open(os.path.join(config.SCRAPE_DIR, '{}.html'.format(asin)), 'wb') as fout:
         # html_str = str(r.content, encoding='utf-8')

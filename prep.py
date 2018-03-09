@@ -44,6 +44,6 @@ def __gen_asin_file(asin_cnt_dict):
 # num_asins = 10000
 review_file = os.path.join(config.DATADIR, 'Cell_Phones_and_Accessories_5.json')
 asin_cnt_dict = __get_product_num_reviews(review_file)
-# __gen_asin_file(asin_cnt_dict)
+__gen_asin_file(asin_cnt_dict)
 
 # __check_metadata(asin_cnt_dict.keys())
