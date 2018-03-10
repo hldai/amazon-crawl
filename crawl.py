@@ -21,8 +21,8 @@ def make_request(url, cookies):
     fail = True
     while fail:
         try:
-            # r = requests.get(url, headers=config.headers, proxies=proxies, cookies=cookies)
-            r = requests.get(url, headers=config.headers, cookies=cookies)
+            r = requests.get(url, headers=config.headers, proxies=proxies, cookies=cookies)
+            # r = requests.get(url, headers=config.headers, cookies=cookies)
             fail = False
         except RequestException as e:
             logging.warning("Request for {} failed, trying again.".format(url))
@@ -70,7 +70,7 @@ def __update_asins():
                      ).to_csv(fout, header=False, index=False)
 
 
-# __update_asins()
+__update_asins()
 # exit()
 
 str_today = datetime.date.today().strftime('%y-%m-%d')
@@ -79,14 +79,24 @@ init_logging('log/{}.log'.format(str_today), to_stdout=True)
 asins = __get_asins(config.ASIN_FILE)
 
 cookies = None
-for asin in asins:
+for i, asin in enumerate(asins):
     logging.info('requesting {}'.format(asin))
     r = make_request('https://www.amazon.com/dp/{}/'.format(asin), cookies)
     if r is None:
+        time.sleep(5)
+        continue
+    if len(r.content) < 50000:
+        logging.warning("Captcha detected")
+        time.sleep(60)
         continue
 
     if cookies is None:
         cookies = r.cookies
+    else:
+        for k, v in r.cookies.items():
+            cookies[k] = v
+    if i < 10:
+        print(cookies)
 
     with open(os.path.join(config.SCRAPE_DIR, '{}.html'.format(asin)), 'wb') as fout:
         # html_str = str(r.content, encoding='utf-8')

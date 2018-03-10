@@ -41,6 +41,10 @@ def __gen_asin_file(asin_cnt_dict):
         df['asin'].to_csv(fout, header=False, index=False)
 
 
+# f = open('d:/data/amazon/scraped/B00J4J6JN0.html', encoding='utf-8')
+# print(len(f.read()))
+# exit()
+
 # num_asins = 10000
 review_file = os.path.join(config.DATADIR, 'Cell_Phones_and_Accessories_5.json')
 asin_cnt_dict = __get_product_num_reviews(review_file)
