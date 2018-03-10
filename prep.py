@@ -37,7 +37,7 @@ def __gen_asin_file(asin_cnt_dict):
     tups = [(k, v) for k, v in asin_cnt_dict.items()]
     tups.sort(key=lambda x: -x[1])
     df = pd.DataFrame(tups, columns=['asin', 'n_reviews'])
-    with open(config.ASIN_FILE, 'w', encoding='utf-8', newline='\n') as fout:
+    with open(config.ALL_ASIN_FILE, 'w', encoding='utf-8', newline='\n') as fout:
         df['asin'].to_csv(fout, header=False, index=False)
 
 
