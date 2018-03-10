@@ -57,7 +57,9 @@ def __get_404_asins(log_file):
 
 
 def __update_asins():
-    all_asins = __get_asins(config.ALL_ASIN_FILE)
+    df = pd.read_csv(config.ALL_ASIN_FILE)
+    all_asins = df['asin']
+    # all_asins = __get_asins(config.ALL_ASIN_FILE)
     scraped_asins = set()
     for file in os.listdir(config.SCRAPE_DIR):
         scraped_asins.add(file[:-5])
