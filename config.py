@@ -8,7 +8,8 @@ headers = {
 }
 
 DATADIR = 'd:/data/amazon'
-ALL_ASIN_FILE = path.join(DATADIR, 'asin_list_all.txt')
-ASIN_FILE = path.join(DATADIR, 'asin_list.txt')
-SCRAPE_DIR = path.join(DATADIR, 'scraped')
+# ALL_ASIN_FILE = path.join(DATADIR, 'asin_list_all.txt')
+# ASIN_FILE = path.join(DATADIR, 'asin_list.txt')
+# SCRAPE_DIR = path.join(DATADIR, 'scraped')
+SCRAPE_STATUS_FILE = path.join(DATADIR, 'scrape_status.txt')
 METADATA_FILE = path.join(DATADIR, 'metadata.json')

@@ -33,21 +33,47 @@ def __check_metadata(asins):
             print(asin)
 
 
-def __gen_asin_file(asin_cnt_dict):
+def __gen_asin_file(asin_cnt_dict, dst_file):
     tups = [(k, v) for k, v in asin_cnt_dict.items()]
     tups.sort(key=lambda x: -x[1])
     df = pd.DataFrame(tups, columns=['asin', 'n_reviews'])
-    with open(config.ALL_ASIN_FILE, 'w', encoding='utf-8', newline='\n') as fout:
+    with open(dst_file, 'w', encoding='utf-8', newline='\n') as fout:
         df.to_csv(fout, index=False)
 
 
-# f = open('d:/data/amazon/scraped/B00J4J6JN0.html', encoding='utf-8')
-# print(len(f.read()))
-# exit()
+def __get_404_asins(log_file):
+    f = open(log_file, encoding='utf-8')
+    cur_asin = ''
+    asin_set = set()
+    for line in f:
+        line = line.strip()
+        if line[:-11].endswith('requesting'):
+            cur_asin = line[-10:]
+        if '404 status' in line:
+            asin_set.add(cur_asin)
+    f.close()
+    return asin_set
+
+
+import random
+for i in range(10):
+    print(random.randint(0, 4))
+
+# fout = open(config.SCRAPE_STATUS_FILE, 'a', encoding='utf-8', newline='\n')
+# for file in os.listdir('d:/data/amazon/scraped_Cell_Phones_and_Accessories'):
+#     fout.write('{},{}\n'.format(file[:-5], os.path.join(config.DATADIR, 'scraped_Cell_Phones_and_Accessories', file)))
+# for file in os.listdir('./log'):
+#     nf_asins = __get_404_asins(os.path.join('./log', file))
+#     for asin in nf_asins:
+#         fout.write('{},{}\n'.format(asin, 404))
+# fout.close()
 
 # num_asins = 10000
-# review_file = os.path.join(config.DATADIR, 'Cell_Phones_and_Accessories_5.json')
+# category = 'Cell_Phones_and_Accessories'
+# category = 'Electronics'
+# review_file = os.path.join(config.DATADIR, '{}_5.json'.format(category))
+# all_asin_file = os.path.join(config.DATADIR, 'asin_list_all_{}.txt'.format(category))
 # asin_cnt_dict = __get_product_num_reviews(review_file)
-# __gen_asin_file(asin_cnt_dict)
+# __gen_asin_file(asin_cnt_dict, all_asin_file)
 
 # __check_metadata(asin_cnt_dict.keys())
