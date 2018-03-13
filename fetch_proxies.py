@@ -158,7 +158,7 @@ def check(proxy):
                                headers=headers, timeout=5)
         # request = requests.get(url, proxies={'http': 'http://%s' % proxy, 'https': 'http://%s' % proxy},
         #                        headers=headers)
-        print(request.status_code)
+        print(request.status_code, end='\t')
         if request.status_code == 200 and len(request.content) > 50000:
             return request.ok
         else:
@@ -167,7 +167,7 @@ def check(proxy):
         # print(e)
         return False
 
-def fetch_all(endpage=10):
+def fetch_all(candidate_proxies_file):
     proxies = []
     # for i in range(1, endpage):
     #     proxies += fetch_kxdaili(i)
@@ -175,24 +175,27 @@ def fetch_all(endpage=10):
     # proxies += fetch_mimvp()
     # proxies += fetch_xici()
     # proxies += fetch_ip181()
-    with open('candidate_proxies.txt') as f:
+    with open(candidate_proxies_file) as f:
         proxies = [line.strip() for line in f]
     # print(proxies)
     # exit()
     valid_proxies = []
     logger.info('checking proxies validation')
-    for proxy in proxies:
-        print(proxy, end='\t')
+    for i, proxy in enumerate(proxies):
+        print(i, proxy, end='\t')
         if check(proxy):
             print('ok')
             valid_proxies.append(proxy)
-            if len(valid_proxies) > 100:
-                break
+            # if len(valid_proxies) > 100:
+            #     break
         else:
             print('failed')
     return valid_proxies
 
+
 if __name__ == '__main__':
+    # candidate_proxies_file = 'candidate_proxies.txt'
+    candidate_proxies_file = 'proxies_all.txt'
     import sys
     root_logger = logging.getLogger('')
     stream_handler = logging.StreamHandler(sys.stdout)
@@ -201,7 +204,7 @@ if __name__ == '__main__':
     root_logger.addHandler(stream_handler)
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
-    proxies = fetch_all(10)
+    proxies = fetch_all(candidate_proxies_file)
     with open('proxies.txt', 'w', encoding='utf-8', newline='\n') as f:
         for proxy in proxies:
             print(proxy)

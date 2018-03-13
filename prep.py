@@ -55,9 +55,12 @@ def __get_404_asins(log_file):
     return asin_set
 
 
-import random
-for i in range(10):
-    print(random.randint(0, 4))
+def __gen_asin_num_reviews_file(category):
+    review_file = os.path.join(config.DATADIR, '{}_5.json'.format(category))
+    all_asin_file = os.path.join(config.DATADIR, 'asin_list_all_{}.txt'.format(category))
+    asin_cnt_dict = __get_product_num_reviews(review_file)
+    __gen_asin_file(asin_cnt_dict, all_asin_file)
+
 
 # fout = open(config.SCRAPE_STATUS_FILE, 'a', encoding='utf-8', newline='\n')
 # for file in os.listdir('d:/data/amazon/scraped_Cell_Phones_and_Accessories'):
@@ -71,9 +74,8 @@ for i in range(10):
 # num_asins = 10000
 # category = 'Cell_Phones_and_Accessories'
 # category = 'Electronics'
-# review_file = os.path.join(config.DATADIR, '{}_5.json'.format(category))
-# all_asin_file = os.path.join(config.DATADIR, 'asin_list_all_{}.txt'.format(category))
-# asin_cnt_dict = __get_product_num_reviews(review_file)
-# __gen_asin_file(asin_cnt_dict, all_asin_file)
+# category = 'Tools_and_Home_Improvement'
+category = 'Home_and_Kitchen'
+__gen_asin_num_reviews_file(category)
 
 # __check_metadata(asin_cnt_dict.keys())
