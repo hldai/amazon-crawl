@@ -3,11 +3,13 @@
 from bs4 import BeautifulSoup
 import requests
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
 headers = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36"
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/64.0.3282.186 Safari/537.36"
 }
 
 def get_html(url):
@@ -154,7 +156,7 @@ def check(proxy):
     url = 'https://www.amazon.com/dp/B0017JY5FE'
     # url = 'https://baike.baidu.com/'
     try:
-        request = requests.get(url, proxies={'http': 'http://%s' % proxy, 'https': 'http://%s' % proxy},
+        request = requests.get(url, proxies={'http': proxy, 'https': proxy},
                                headers=headers, timeout=5)
         # request = requests.get(url, proxies={'http': 'http://%s' % proxy, 'https': 'http://%s' % proxy},
         #                        headers=headers)
@@ -167,6 +169,22 @@ def check(proxy):
         # print(e)
         return False
 
+
+def __proxies_from_fpl():
+    r = requests.get('https://free-proxy-list.net', headers=headers)
+    # print(r.text)
+    miter = re.finditer('<tr><td>(.*?)</td><td>(.*?)</td><td>.*?</td><td.*?<td.*?<td.*?<td class=\'hx\'>(.*?)</td>',
+                        r.text)
+    urls = list()
+    for m in miter:
+        protocol = 'https' if m.group(3) == 'yes' else 'http'
+        urls.append('{}://{}:{}'.format(protocol, m.group(1), m.group(2)))
+    # for url in urls:
+    #     print(url)
+    print(len(urls), 'urls')
+    return urls
+
+
 def fetch_all(candidate_proxies_file):
     proxies = []
     # for i in range(1, endpage):
@@ -175,8 +193,9 @@ def fetch_all(candidate_proxies_file):
     # proxies += fetch_mimvp()
     # proxies += fetch_xici()
     # proxies += fetch_ip181()
-    with open(candidate_proxies_file) as f:
-        proxies = [line.strip() for line in f]
+    # with open(candidate_proxies_file) as f:
+    #     proxies = [line.strip() for line in f]
+    proxies = __proxies_from_fpl()
     # print(proxies)
     # exit()
     valid_proxies = []
@@ -205,7 +224,8 @@ if __name__ == '__main__':
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     proxies = fetch_all(candidate_proxies_file)
+    print('found {} valid urls'.format(len(proxies)))
     with open('proxies.txt', 'w', encoding='utf-8', newline='\n') as f:
         for proxy in proxies:
-            print(proxy)
-            f.write(proxy+'\n')
+            # print(proxy)
+            f.write(proxy + '\n')

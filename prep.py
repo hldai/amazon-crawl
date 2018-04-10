@@ -62,6 +62,23 @@ def __gen_asin_num_reviews_file(category):
     __gen_asin_file(asin_cnt_dict, all_asin_file)
 
 
+def __tmp_func(ret_dict):
+    import time
+    time.sleep(3)
+    ret_dict['s'] = 'ok'
+    return 31
+
+
+from multiprocessing import Process, Manager
+if __name__ == '__main__':
+    all_done = False
+    manager = Manager()
+    return_dict = manager.dict()
+    p = Process(target=__tmp_func, args=(return_dict,))
+    p.start()
+    p.join()
+    print(return_dict)
+    print('ok')
 # fout = open(config.SCRAPE_STATUS_FILE, 'a', encoding='utf-8', newline='\n')
 # for file in os.listdir('d:/data/amazon/scraped_Cell_Phones_and_Accessories'):
 #     fout.write('{},{}\n'.format(file[:-5], os.path.join(config.DATADIR, 'scraped_Cell_Phones_and_Accessories', file)))
@@ -75,7 +92,7 @@ def __gen_asin_num_reviews_file(category):
 # category = 'Cell_Phones_and_Accessories'
 # category = 'Electronics'
 # category = 'Tools_and_Home_Improvement'
-category = 'Home_and_Kitchen'
-__gen_asin_num_reviews_file(category)
+# category = 'Home_and_Kitchen'
+# __gen_asin_num_reviews_file(category)
 
 # __check_metadata(asin_cnt_dict.keys())

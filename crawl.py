@@ -5,11 +5,61 @@ import time
 import datetime
 import pandas as pd
 import random
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 from requests.exceptions import RequestException
 
 import config
 from utils import loggingutils
+
+
+def __check_proxy(proxy_url):
+    url = 'https://www.amazon.com/dp/B0017JY5FE'
+    try:
+        request = requests.get(url, proxies={'http': proxy_url, 'https': proxy_url},
+                               headers=config.headers, timeout=5)
+        print(request.status_code, end='\t')
+        if request.status_code == 200 and len(request.content) > 50000:
+            return request.ok
+        else:
+            return False
+    except BaseException as e:
+        # print(e)
+        return False
+
+
+def __get_proxy_urls():
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/64.0.3282.186 Safari/537.36"
+    }
+    r = requests.get('https://free-proxy-list.net', headers=headers)
+    # print(r.text)
+    miter = re.finditer('<tr><td>(.*?)</td><td>(.*?)</td><td>.*?</td><td.*?<td.*?<td.*?<td class=\'hx\'>(.*?)</td>',
+                        r.text)
+    urls = list()
+    for m in miter:
+        protocol = 'https' if m.group(3) == 'yes' else 'http'
+        urls.append('{}://{}:{}'.format(protocol, m.group(1), m.group(2)))
+    # for url in urls:
+    #     print(url)
+    print(len(urls), 'urls')
+    return urls
+
+
+def __get_checked_proxies():
+    proxy_urls = __get_proxy_urls()
+    valid_proxies = []
+    print('checking proxies ...')
+    for i, proxy in enumerate(proxy_urls):
+        print(i, proxy, end='\t')
+        if __check_proxy(proxy):
+            print('ok')
+            valid_proxies.append(proxy)
+            # if len(valid_proxies) > 100:
+            #     break
+        else:
+            print('failed')
+    return valid_proxies
 
 
 def make_request(url, cookies, proxy_url):
@@ -33,8 +83,13 @@ def make_request(url, cookies, proxy_url):
 
 
 def __get_asins(asin_file):
+    asins = list()
     with open(asin_file, encoding='utf-8') as f:
-        return f.read().strip().split('\n')
+        for line in f:
+            line = line.strip()
+            if line:
+                asins.append(line)
+    return asins
 
 
 def __update_asins(df_all_asins, scrape_status_file, asin_file):
@@ -50,29 +105,30 @@ def __update_asins(df_all_asins, scrape_status_file, asin_file):
         df_all_asins[~df_all_asins['asin'].isin(df_visited[0])]['asin'].to_csv(fout, header=False, index=False)
 
 
-def __scrape_amazon(proxy_file, category):
+def __scrape_amazon(proxy_urls, category):
     str_today = datetime.date.today().strftime('%y-%m-%d')
     logger = loggingutils.get_logger('{}_log', 'log/{}-{}.log'.format(category, str_today), to_stdout=True)
     # init_logging('log/{}.log'.format(str_today), to_stdout=True)
-    print('scraping with proxy: {}, category: {}'.format(proxy_file, category))
+    print('scraping in category: {}'.format(category))
 
+    min_n_reviews = 0
     all_asin_file = os.path.join(config.DATADIR, 'asin_list_all_{}.txt'.format(category))
     asin_file = os.path.join(config.DATADIR, 'asin_list_{}.txt'.format(category))
     scraped_dir = os.path.join(config.DATADIR, 'scraped_{}'.format(category))
     scrape_status_file = os.path.join(config.DATADIR, 'scrape_status_{}.txt'.format(category))
-    min_n_reviews = 20
 
     df_all_asins = pd.read_csv(all_asin_file)
     # __update_asins_ob(df_all_asins, asin_file, scraped_dir)
-    __update_asins(df_all_asins, scrape_status_file, asin_file)
-    # exit()
+    # __update_asins(df_all_asins, scrape_status_file, asin_file)
 
     asins = __get_asins(asin_file)
     asin_n_rev_dict = {asin: n for asin, n in df_all_asins.itertuples(False, None)}
 
-    with open(proxy_file, encoding='utf-8') as f:
-        proxy_ips = f.read().strip().split('\n')
-        proxy_urls = ['http://{}'.format(ip) for ip in proxy_ips]
+    # with open(proxy_file, encoding='utf-8') as f:
+        # proxy_ips = f.read().strip().split('\n')
+        # proxy_urls = ['https://{}'.format(ip) for ip in proxy_ips]
+        # proxy_urls = f.read().strip().split('\n')
+        # proxy_urls = ['https://185.93.3.123:8080/']
     # proxy_urls = ["socks5://{ip}:{port}/".format(ip='127.0.0.1', port=8899)]
     purl_cookies_tups = [(purl, None) for purl in proxy_urls]
     proxy_fail_dict = {purl: 0 for purl in proxy_urls}
@@ -107,7 +163,7 @@ def __scrape_amazon(proxy_file, category):
             if r is None or r.status_code == 503 or (r.status_code == 200 and len(r.content) < 50000):
                 fail_cnt = proxy_fail_dict[purl]
                 proxy_fail_dict[purl] = fail_cnt + 1
-                if fail_cnt == 2:
+                if fail_cnt == 3:
                     del purl_cookies_tups[purl_idx]
                     logger.info('{} ips left'.format(len(purl_cookies_tups)))
                     with open('practiced_proxies_{}.txt'.format(category), 'w', encoding='utf-8', newline='\n'
@@ -116,7 +172,7 @@ def __scrape_amazon(proxy_file, category):
                             fout_tmp, header=False, index=False)
                     if len(purl_cookies_tups) == 0:
                         break
-                time.sleep(5)
+                time.sleep(300.0 / len(purl_cookies_tups))
                 continue
             proxy_fail_dict[purl] = 0
 
@@ -158,10 +214,6 @@ def __scrape_amazon(proxy_file, category):
     fout_status.close()
 
 
-def __scrape_amazon_wrapper(x):
-    __scrape_amazon(*x)
-
-
 def __split_proxies(proxy_file, dst_files):
     with open(proxy_file, encoding='utf-8') as f:
         proxies = [line.strip() for line in f]
@@ -179,12 +231,37 @@ if __name__ == '__main__':
     # __scrape_amazon('proxies.txt', 'Cell_Phones_and_Accessories')
     # __scrape_amazon('proxies.txt', 'Electronics')
 
-    proxy_file = 'proxies.txt'
     # categories = ['Electronics', 'Tools_and_Home_Improvement']
-    categories = ['Home_and_Kitchen']
-    proxy_files = ['proxies_{}.txt'.format(i) for i in range(len(categories))]
-    __split_proxies(proxy_file, proxy_files)
+    # categories = ['Electronics', 'Home_and_Kitchen']
+    categories_all = ['Electronics']
 
-    for pf, category in zip(proxy_files, categories):
-        p = Process(target=__scrape_amazon, args=(pf, category))
-        p.start()
+    # proxy_file = 'proxies.txt'
+    # proxy_files = ['proxies_{}.txt'.format(i) for i in range(len(categories))]
+    # __split_proxies(proxy_file, proxy_files)
+
+    while True:
+        categories = list()
+        for category in categories_all:
+            all_asin_file = os.path.join(config.DATADIR, 'asin_list_all_{}.txt'.format(category))
+            asin_file = os.path.join(config.DATADIR, 'asin_list_{}.txt'.format(category))
+            scrape_status_file = os.path.join(config.DATADIR, 'scrape_status_{}.txt'.format(category))
+            df_all_asins = pd.read_csv(all_asin_file)
+            # __update_asins_ob(df_all_asins, asin_file, scraped_dir)
+            __update_asins(df_all_asins, scrape_status_file, asin_file)
+            asins = __get_asins(asin_file)
+            if len(asins):
+                categories.append(category)
+
+        if not categories:
+            break
+
+        proxy_urls = __get_checked_proxies()
+        proxy_urls_list = [proxy_urls]
+        process_list = list()
+
+        for purls, category in zip(proxy_urls_list, categories):
+            p = Process(target=__scrape_amazon, args=(purls, category))
+            p.start()
+            process_list.append(p)
+        for p in process_list:
+            p.join()
